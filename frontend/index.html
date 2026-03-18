@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AsthmaCare — Your Breathing Companion</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --sky: #e8f4fd; --sky-mid: #bde0f7;
+  --blue: #1a6eb5; --blue-dark: #0d4a80; --blue-light: #4a9fd4;
+  --teal: #0d9488; --teal-light: #5eead4;
+  --coral: #f43f5e; --amber: #f59e0b; --green: #10b981;
+  --ink: #0f172a; --ink-soft: #334155; --mist: #f1f5f9; --white: #ffffff;
+  --shadow: 0 4px 24px rgba(13,74,128,0.10);
+  --shadow-lg: 0 12px 48px rgba(13,74,128,0.16);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:#f0f7ff; color:var(--ink); min-height:100vh; overflow-x:hidden; }
+
+nav {
+  position:sticky; top:0; z-index:100;
+  background:rgba(255,255,255,0.92); backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(26,110,181,0.12);
+  padding:0 2rem; display:flex; align-items:center; justify-content:space-between;
+  height:68px; box-shadow:0 2px 16px rgba(13,74,128,0.06);
+}
+.nav-logo { display:flex; align-items:center; gap:10px; font-family:'DM Serif Display',serif; font-size:1.4rem; color:var(--blue-dark); text-decoration:none; }
+.nav-logo .lung-icon { width:36px; height:36px; background:linear-gradient(135deg,var(--blue),var(--teal)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+.nav-tabs { display:flex; gap:4px; background:var(--mist); padding:4px; border-radius:12px; }
+.nav-tab { padding:8px 16px; border:none; background:transparent; border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.88rem; font-weight:500; color:var(--ink-soft); transition:all 0.2s; }
+.nav-tab:hover { color:var(--blue); background:rgba(26,110,181,0.08); }
+.nav-tab.active { background:var(--white); color:var(--blue); box-shadow:0 2px 8px rgba(13,74,128,0.12); }
+.nav-user { display:flex; align-items:center; gap:12px; }
+.user-badge { display:flex; align-items:center; gap:8px; background:linear-gradient(135deg,#e8f4fd,#d1eaf8); padding:6px 14px; border-radius:24px; font-size:0.88rem; font-weight:500; color:var(--blue-dark); }
+.avatar { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,var(--blue),var(--teal)); display:flex; align-items:center; justify-content:center; color:white; font-size:12px; font-weight:600; }
+.btn-logout { padding:7px 16px; border:1.5px solid rgba(26,110,181,0.3); background:transparent; border-radius:8px; cursor:pointer; font-size:0.85rem; color:var(--blue); font-weight:500; transition:all 0.2s; }
+.btn-logout:hover { background:var(--blue); color:white; }
+
+.page { display:none; padding:2rem; max-width:1200px; margin:0 auto; }
+.page.active { display:block; animation:fadeUp 0.4s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+#auth-page { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem; background:linear-gradient(135deg,#0d4a80 0%,#1a6eb5 40%,#0d9488 100%); position:fixed; inset:0; z-index:200; }
+.auth-container { width:100%; max-width:440px; background:white; border-radius:24px; box-shadow:0 32px 80px rgba(0,0,0,0.25); overflow:hidden; }
+.auth-header { background:linear-gradient(135deg,#0d4a80,#1a6eb5); padding:2.5rem 2.5rem 2rem; text-align:center; color:white; }
+.auth-header .big-icon { width:72px; height:72px; border-radius:20px; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:36px; margin:0 auto 1.2rem; backdrop-filter:blur(10px); }
+.auth-header h1 { font-family:'DM Serif Display',serif; font-size:1.9rem; margin-bottom:0.4rem; }
+.auth-header p { opacity:0.8; font-size:0.95rem; }
+.auth-tabs { display:flex; border-bottom:1px solid #e2e8f0; }
+.auth-tab { flex:1; padding:1rem; border:none; background:white; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:500; color:var(--ink-soft); transition:all 0.2s; border-bottom:2px solid transparent; }
+.auth-tab.active { color:var(--blue); border-bottom-color:var(--blue); }
+.auth-body { padding:2rem 2.5rem 2.5rem; }
+.auth-form { display:none; }
+.auth-form.active { display:block; animation:fadeUp 0.3s ease; }
+.form-group { margin-bottom:1.2rem; }
+.form-label { display:block; margin-bottom:0.4rem; font-size:0.88rem; font-weight:500; color:var(--ink-soft); }
+.form-input { width:100%; padding:12px 16px; border:1.5px solid #e2e8f0; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:0.95rem; color:var(--ink); background:var(--mist); transition:all 0.2s; outline:none; }
+.form-input:focus { border-color:var(--blue); background:white; box-shadow:0 0 0 3px rgba(26,110,181,0.1); }
+.btn-primary { width:100%; padding:13px; background:linear-gradient(135deg,var(--blue),var(--blue-dark)); color:white; border:none; border-radius:10px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:1rem; font-weight:600; transition:all 0.2s; box-shadow:0 4px 16px rgba(13,74,128,0.3); margin-top:0.5rem; }
+.btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(13,74,128,0.4); }
+.btn-primary:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+.auth-error { background:#fff1f2; border:1px solid #fecdd3; color:#be123c; padding:10px 14px; border-radius:8px; font-size:0.88rem; margin-bottom:1rem; display:none; }
+
+.hero-band { background:linear-gradient(135deg,#0d4a80 0%,#1a6eb5 50%,#0d9488 100%); border-radius:20px; padding:2.5rem; color:white; margin-bottom:2rem; position:relative; overflow:hidden; }
+.hero-band::before { content:'🫁'; position:absolute; right:2rem; top:50%; transform:translateY(-50%); font-size:7rem; opacity:0.12; }
+.hero-band h2 { font-family:'DM Serif Display',serif; font-size:2rem; margin-bottom:0.5rem; }
+.hero-band p { opacity:0.85; font-size:1rem; max-width:500px; }
+.sos-btn { margin-top:1.5rem; padding:12px 28px; background:rgba(255,255,255,0.2); backdrop-filter:blur(10px); border:1.5px solid rgba(255,255,255,0.4); color:white; border-radius:50px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:600; transition:all 0.2s; display:inline-flex; align-items:center; gap:8px; }
+.sos-btn:hover { background:rgba(255,255,255,0.3); transform:scale(1.02); }
+
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin-bottom:2rem; }
+.stat-card { background:white; border-radius:16px; padding:1.5rem; box-shadow:var(--shadow); border:1px solid rgba(26,110,181,0.06); transition:transform 0.2s; }
+.stat-card:hover { transform:translateY(-2px); }
+.stat-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:1rem; }
+.stat-icon.blue { background:#dbeafe; } .stat-icon.teal { background:#ccfbf1; } .stat-icon.amber { background:#fef3c7; } .stat-icon.coral { background:#ffe4e6; } .stat-icon.purple { background:#f3e8ff; }
+.stat-num { font-family:'DM Serif Display',serif; font-size:1.8rem; color:var(--ink); }
+.stat-label { font-size:0.85rem; color:var(--ink-soft); margin-top:2px; }
+
+.page-title { font-family:'DM Serif Display',serif; font-size:1.8rem; color:var(--ink); margin-bottom:0.4rem; }
+.page-sub { color:var(--ink-soft); margin-bottom:1.8rem; font-size:0.95rem; }
+
+.filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:1.8rem; }
+.filter-btn { padding:7px 16px; border:1.5px solid #e2e8f0; background:white; border-radius:50px; cursor:pointer; font-size:0.85rem; font-weight:500; color:var(--ink-soft); transition:all 0.2s; }
+.filter-btn:hover { border-color:var(--blue); color:var(--blue); }
+.filter-btn.active { background:var(--blue); color:white; border-color:var(--blue); }
+
+.tips-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:1.2rem; }
+.tip-card { background:white; border-radius:16px; padding:1.5rem; box-shadow:var(--shadow); border:1px solid rgba(26,110,181,0.06); transition:all 0.25s; border-left:4px solid var(--blue); }
+.tip-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+.tip-card.critical { border-left-color:var(--coral); } .tip-card.moderate { border-left-color:var(--amber); } .tip-card.low { border-left-color:var(--green); }
+.tip-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:50px; font-size:0.75rem; font-weight:600; margin-bottom:0.8rem; text-transform:uppercase; letter-spacing:0.04em; }
+.badge-critical{background:#fff1f2;color:#be123c;} .badge-moderate{background:#fffbeb;color:#92400e;} .badge-low{background:#f0fdf4;color:#166534;}
+.badge-emergency{background:#fff1f2;color:#be123c;} .badge-prevention{background:#f0fdf4;color:#166534;} .badge-medication{background:#eff6ff;color:#1d4ed8;}
+.badge-monitoring{background:#fdf4ff;color:#7c3aed;} .badge-management{background:#fffbeb;color:#92400e;} .badge-lifestyle{background:#ecfeff;color:#155e75;} .badge-environment{background:#f0fdf4;color:#166534;}
+.tip-title { font-weight:600; font-size:1rem; color:var(--ink); margin-bottom:0.6rem; line-height:1.4; }
+.tip-content { font-size:0.88rem; color:var(--ink-soft); line-height:1.65; }
+
+.location-bar { background:white; border-radius:16px; padding:1.5rem; box-shadow:var(--shadow); margin-bottom:1.5rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+.location-info { flex:1; min-width:200px; }
+.location-info h3 { font-weight:600; font-size:1rem; margin-bottom:2px; }
+.location-info p { font-size:0.85rem; color:var(--ink-soft); }
+.btn-locate { padding:10px 20px; background:linear-gradient(135deg,var(--teal),#0f766e); color:white; border:none; border-radius:10px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.9rem; font-weight:600; transition:all 0.2s; display:flex; align-items:center; gap:6px; white-space:nowrap; }
+.btn-locate:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(13,148,136,0.3); }
+
+.er-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:1.2rem; }
+.er-card { background:white; border-radius:16px; padding:1.5rem; box-shadow:var(--shadow); border:1px solid rgba(26,110,181,0.06); transition:all 0.25s; cursor:pointer; }
+.er-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+.er-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; }
+.er-name { font-weight:600; font-size:1rem; color:var(--ink); line-height:1.3; }
+.er-dist { background:var(--sky); color:var(--blue); padding:4px 10px; border-radius:50px; font-size:0.8rem; font-weight:600; white-space:nowrap; margin-left:8px; }
+.er-meta { display:flex; flex-direction:column; gap:6px; margin-bottom:1.2rem; }
+.er-meta-row { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--ink-soft); }
+.er-meta-row span.icon { font-size:14px; width:20px; }
+.er-footer { display:flex; align-items:center; justify-content:space-between; }
+.wait-badge { display:flex; align-items:center; gap:4px; padding:6px 12px; border-radius:8px; font-size:0.82rem; font-weight:600; }
+.wait-low{background:#f0fdf4;color:#166534;} .wait-mid{background:#fffbeb;color:#92400e;} .wait-high{background:#fff1f2;color:#be123c;}
+.btn-directions { padding:8px 16px; background:var(--blue); color:white; border:none; border-radius:8px; cursor:pointer; font-size:0.85rem; font-weight:600; transition:all 0.2s; text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
+.btn-directions:hover { background:var(--blue-dark); }
+.open-badge { display:inline-flex; align-items:center; gap:4px; font-size:0.78rem; font-weight:600; }
+.open-badge.open { color:var(--green); } .open-badge.closed { color:#94a3b8; }
+
+/* ---- AIR QUALITY PAGE ---- */
+.aqi-hero {
+  border-radius:20px; padding:2.5rem; color:white;
+  margin-bottom:2rem; position:relative; overflow:hidden;
+  transition: background 0.5s;
+}
+.aqi-hero::before { content:'🌬️'; position:absolute; right:2rem; top:50%; transform:translateY(-50%); font-size:6rem; opacity:0.15; }
+.aqi-score { font-family:'DM Serif Display',serif; font-size:4rem; line-height:1; margin-bottom:0.3rem; }
+.aqi-label { font-size:1.3rem; font-weight:600; margin-bottom:0.5rem; opacity:0.95; }
+.aqi-risk { font-size:0.95rem; opacity:0.85; max-width:500px; }
+
+.aqi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.2rem; margin-bottom:1.5rem; }
+
+.aqi-card { background:white; border-radius:16px; padding:1.5rem; box-shadow:var(--shadow); border:1px solid rgba(26,110,181,0.06); }
+.aqi-card h3 { font-weight:600; font-size:1rem; margin-bottom:1.2rem; display:flex; align-items:center; gap:8px; }
+
+.weather-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; }
+.weather-item { background:var(--mist); border-radius:10px; padding:0.8rem 1rem; }
+.weather-item .w-label { font-size:0.75rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
+.weather-item .w-value { font-size:1.1rem; font-weight:600; color:var(--ink); }
+
+.pollutant-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.8rem; }
+.pollutant-item { background:var(--mist); border-radius:10px; padding:0.8rem; text-align:center; }
+.pollutant-item .p-name { font-size:0.72rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }
+.pollutant-item .p-value { font-size:1rem; font-weight:700; color:var(--ink); }
+.pollutant-item .p-unit { font-size:0.7rem; color:#94a3b8; }
+
+.trigger-list { display:flex; flex-direction:column; gap:8px; }
+.trigger-item { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#fff1f2; border-radius:10px; font-size:0.88rem; color:#be123c; font-weight:500; }
+.trigger-item.safe { background:#f0fdf4; color:#166534; }
+
+.aqi-bar-wrap { margin-top:1rem; }
+.aqi-bar-label { display:flex; justify-content:space-between; font-size:0.78rem; color:var(--ink-soft); margin-bottom:6px; }
+.aqi-bar { height:10px; border-radius:50px; background:linear-gradient(to right,#10b981,#84cc16,#f59e0b,#f97316,#ef4444); position:relative; }
+.aqi-bar-indicator { position:absolute; top:50%; transform:translate(-50%,-50%); width:16px; height:16px; border-radius:50%; background:white; border:3px solid #0f172a; box-shadow:0 2px 8px rgba(0,0,0,0.2); transition:left 0.5s; }
+
+.btn-refresh { padding:10px 20px; background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; border:none; border-radius:10px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.9rem; font-weight:600; transition:all 0.2s; display:flex; align-items:center; gap:6px; }
+.btn-refresh:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(124,58,237,0.3); }
+
+.profile-card { background:white; border-radius:20px; padding:2.5rem; box-shadow:var(--shadow); max-width:560px; }
+.profile-avatar { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,var(--blue),var(--teal)); display:flex; align-items:center; justify-content:center; font-size:2rem; color:white; font-family:'DM Serif Display',serif; margin-bottom:1.2rem; }
+.profile-name { font-family:'DM Serif Display',serif; font-size:1.6rem; margin-bottom:4px; }
+.profile-email { color:var(--ink-soft); font-size:0.95rem; margin-bottom:1.5rem; }
+.profile-meta { display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding-top:1.5rem; border-top:1px solid #f1f5f9; }
+.meta-item label { font-size:0.78rem; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; display:block; margin-bottom:4px; }
+.meta-item p { font-size:0.95rem; font-weight:500; color:var(--ink); }
+
+.spinner { display:inline-block; width:20px; height:20px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-state { text-align:center; padding:3rem; color:var(--ink-soft); }
+.loading-state .big-spinner { width:48px; height:48px; border:3px solid #e2e8f0; border-top-color:var(--blue); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 1rem; }
+.empty-state { text-align:center; padding:3rem; color:var(--ink-soft); background:white; border-radius:16px; box-shadow:var(--shadow); }
+.empty-state .big-emoji { font-size:3rem; margin-bottom:1rem; display:block; }
+
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:300; display:flex; align-items:center; justify-content:center; padding:1rem; display:none; }
+.modal-overlay.active { display:flex; }
+.modal { background:white; border-radius:24px; padding:2.5rem; max-width:480px; width:100%; animation:fadeUp 0.3s ease; border-top:6px solid var(--coral); }
+.modal h2 { font-family:'DM Serif Display',serif; font-size:1.6rem; color:var(--coral); margin-bottom:1rem; }
+.modal-steps { list-style:none; display:flex; flex-direction:column; gap:12px; margin-bottom:1.5rem; }
+.modal-steps li { display:flex; align-items:flex-start; gap:12px; padding:12px 16px; background:#fff1f2; border-radius:10px; font-size:0.92rem; line-height:1.5; }
+.step-num { min-width:24px; height:24px; border-radius:50%; background:var(--coral); color:white; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; }
+.btn-call-911 { width:100%; padding:14px; background:var(--coral); color:white; border:none; border-radius:12px; font-size:1.1rem; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(244,63,94,0.4); } 50% { box-shadow:0 0 0 12px rgba(244,63,94,0); } }
+.btn-close-modal { width:100%; padding:10px; margin-top:10px; background:var(--mist); color:var(--ink-soft); border:none; border-radius:10px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.9rem; }
+
+.toast { position:fixed; bottom:2rem; right:2rem; background:var(--ink); color:white; padding:12px 20px; border-radius:10px; font-size:0.9rem; z-index:500; display:none; animation:fadeUp 0.3s ease; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+.toast.success { background:var(--teal); } .toast.error { background:var(--coral); } .toast.show { display:block; }
+
+@media (max-width:640px) {
+  nav { padding:0 1rem; } .nav-tabs { display:none; } .page { padding:1rem; }
+  .hero-band { padding:1.5rem; } .hero-band::before { display:none; } .auth-body { padding:1.5rem; }
+  .pollutant-grid { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH PAGE -->
+<div id="auth-page">
+  <div class="auth-container">
+    <div class="auth-header">
+      <div class="big-icon">🫁</div>
+      <h1>AsthmaCare</h1>
+      <p>Your intelligent breathing companion</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+    </div>
+    <div class="auth-body">
+      <div id="auth-error" class="auth-error"></div>
+      <form class="auth-form active" id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" id="login-email" placeholder="you@example.com" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="login-password" placeholder="••••••••" required/>
+        </div>
+        <button type="submit" class="btn-primary" id="login-btn">Sign In</button>
+      </form>
+      <form class="auth-form" id="register-form" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="reg-name" placeholder="John Doe" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" id="reg-email" placeholder="you@example.com" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password <span style="color:#94a3b8;font-weight:400">(min 6 characters)</span></label>
+          <input type="password" class="form-input" id="reg-password" placeholder="••••••••" required minlength="6"/>
+        </div>
+        <button type="submit" class="btn-primary" id="reg-btn">Create Account</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <nav>
+    <a class="nav-logo" href="#"><div class="lung-icon">🫁</div>AsthmaCare</a>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('dashboard')">Dashboard</button>
+      <button class="nav-tab" onclick="showPage('airquality')">Air Quality</button>
+      <button class="nav-tab" onclick="showPage('tips')">Tips & Tricks</button>
+      <button class="nav-tab" onclick="showPage('emergency')">Emergency Rooms</button>
+      <button class="nav-tab" onclick="showPage('profile')">Profile</button>
+    </div>
+    <div class="nav-user">
+      <div class="user-badge">
+        <div class="avatar" id="user-avatar">?</div>
+        <span id="user-name-nav">User</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="dashboard">
+    <div class="hero-band">
+      <h2 id="greeting">Good day! 👋</h2>
+      <p>Manage your asthma care, find emergency rooms nearby, and explore tips to breathe easier every day.</p>
+      <button class="sos-btn" onclick="openSOS()">🚨 Emergency Protocol</button>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue">💊</div>
+        <div class="stat-num">12</div>
+        <div class="stat-label">Health Tips Available</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon teal">🏥</div>
+        <div class="stat-num" id="er-count">—</div>
+        <div class="stat-label">Nearby Emergency Rooms</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer" onclick="showPage('airquality');loadAirQuality()">
+        <div class="stat-icon purple">🌬️</div>
+        <div class="stat-num" id="dash-aqi">—</div>
+        <div class="stat-label">Air Quality Index</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon coral">📋</div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">Action Plan Steps</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.5rem;">
+      <div style="background:white;border-radius:16px;padding:1.5rem;box-shadow:var(--shadow);">
+        <h3 style="font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:8px;"><span>⚡</span> Quick Actions</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button onclick="showPage('airquality');loadAirQuality()" style="padding:10px 16px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:600;text-align:left;display:flex;align-items:center;gap:8px;">🌬️ Check Air Quality</button>
+          <button onclick="showPage('emergency');loadNearbyRooms()" style="padding:10px 16px;background:linear-gradient(135deg,#0d9488,#0f766e);color:white;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:600;text-align:left;display:flex;align-items:center;gap:8px;">🏥 Find Nearest ER</button>
+          <button onclick="showPage('tips')" style="padding:10px 16px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:white;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:600;text-align:left;display:flex;align-items:center;gap:8px;">💡 View All Tips</button>
+          <button onclick="openSOS()" style="padding:10px 16px;background:linear-gradient(135deg,#f43f5e,#be123c);color:white;border:none;border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:600;text-align:left;display:flex;align-items:center;gap:8px;">🚨 Emergency Help</button>
+        </div>
+      </div>
+      <div style="background:white;border-radius:16px;padding:1.5rem;box-shadow:var(--shadow);">
+        <h3 style="font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:8px;"><span>🌡️</span> Asthma Zones</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f0fdf4;border-radius:8px;border-left:4px solid #10b981;">
+            <div style="width:12px;height:12px;border-radius:50%;background:#10b981;"></div>
+            <div><div style="font-weight:600;font-size:0.85rem;color:#166534;">Green Zone</div><div style="font-size:0.78rem;color:#4ade80;">Doing well — no symptoms</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fffbeb;border-radius:8px;border-left:4px solid #f59e0b;">
+            <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div>
+            <div><div style="font-weight:600;font-size:0.85rem;color:#92400e;">Yellow Zone</div><div style="font-size:0.78rem;color:#d97706;">Caution — symptoms present</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff1f2;border-radius:8px;border-left:4px solid #f43f5e;">
+            <div style="width:12px;height:12px;border-radius:50%;background:#f43f5e;"></div>
+            <div><div style="font-weight:600;font-size:0.85rem;color:#be123c;">Red Zone</div><div style="font-size:0.78rem;color:#f87171;">Emergency — seek help now</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AIR QUALITY PAGE -->
+  <div class="page" id="airquality">
+    <div class="page-title">Air Quality Monitor</div>
+    <div class="page-sub">Real-time air quality and asthma trigger alerts for your location</div>
+    <div style="display:flex;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <button class="btn-locate" onclick="loadAirQuality()">📍 Get My Air Quality</button>
+      <button class="btn-refresh" onclick="loadAirQuality()">🔄 Refresh</button>
+    </div>
+    <div id="aqi-content">
+      <div class="empty-state">
+        <span class="big-emoji">🌬️</span>
+        <p>Click "Get My Air Quality" to load real-time air data for your location</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPS PAGE -->
+  <div class="page" id="tips">
+    <div class="page-title">Tips & Tricks</div>
+    <div class="page-sub">Evidence-based asthma management guidance from medical professionals</div>
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterTips('all',this)">All Tips</button>
+      <button class="filter-btn" onclick="filterTips('emergency',this)">🚨 Emergency</button>
+      <button class="filter-btn" onclick="filterTips('prevention',this)">🛡️ Prevention</button>
+      <button class="filter-btn" onclick="filterTips('medication',this)">💊 Medication</button>
+      <button class="filter-btn" onclick="filterTips('lifestyle',this)">🏃 Lifestyle</button>
+      <button class="filter-btn" onclick="filterTips('monitoring',this)">📊 Monitoring</button>
+      <button class="filter-btn" onclick="filterTips('environment',this)">🏠 Environment</button>
+    </div>
+    <div class="tips-grid" id="tips-grid">
+      <div class="loading-state"><div class="big-spinner"></div><p>Loading tips...</p></div>
+    </div>
+  </div>
+
+  <!-- EMERGENCY ROOMS PAGE -->
+  <div class="page" id="emergency">
+    <div class="page-title">Nearby Emergency Rooms</div>
+    <div class="page-sub">Find the closest emergency care for asthma attacks and respiratory emergencies</div>
+    <div class="location-bar">
+      <div style="font-size:2rem;">📍</div>
+      <div class="location-info">
+        <h3 id="location-title">Location not set</h3>
+        <p id="location-coords">Click "Use My Location" to find nearby emergency rooms</p>
+      </div>
+      <button class="btn-locate" onclick="loadNearbyRooms()">📍 Use My Location</button>
+    </div>
+    <div id="map" style="height:420px;border-radius:16px;margin-bottom:1.5rem;box-shadow:var(--shadow);background:#e8f4fd;"></div>
+    <div class="er-grid" id="er-grid">
+      <div class="empty-state"><span class="big-emoji">🏥</span><p>Click "Use My Location" above to find emergency rooms near you</p></div>
+    </div>
+  </div>
+
+  <!-- PROFILE PAGE -->
+  <div class="page" id="profile">
+    <div class="page-title">My Profile</div>
+    <div class="page-sub">Your account information and settings</div>
+    <div class="profile-card">
+      <div class="profile-avatar" id="profile-avatar">?</div>
+      <div class="profile-name" id="profile-name">Loading...</div>
+      <div class="profile-email" id="profile-email">...</div>
+      <div class="profile-meta">
+        <div class="meta-item"><label>Member Since</label><p id="profile-joined">—</p></div>
+        <div class="meta-item"><label>Account ID</label><p id="profile-id">—</p></div>
+      </div>
+      <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #f1f5f9;">
+        <button onclick="logout()" style="padding:10px 20px;background:#fff1f2;color:#be123c;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9rem;">Sign Out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SOS MODAL -->
+<div class="modal-overlay" id="sos-modal">
+  <div class="modal">
+    <h2>🚨 Emergency Protocol</h2>
+    <ul class="modal-steps">
+      <li><div class="step-num">1</div>Sit upright — do NOT lie down. Stay calm and breathe slowly.</li>
+      <li><div class="step-num">2</div>Take 4 puffs of your reliever inhaler (one puff at a time, 4 breaths each).</li>
+      <li><div class="step-num">3</div>Wait 4 minutes. If no improvement, take 4 more puffs.</li>
+      <li><div class="step-num">4</div>If still no improvement after another 4 minutes — call 911 immediately.</li>
+      <li><div class="step-num">5</div>Keep taking 4 puffs every 4 minutes until ambulance arrives.</li>
+    </ul>
+    <a href="tel:911" class="btn-call-911" style="display:block;text-align:center;text-decoration:none;">📞 Call 911 Now</a>
+    <button class="btn-close-modal" onclick="closeSOS()">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let currentUser = null;
+let allTips = [];
+let googleMap = null;
+let markers = [];
+
+const getToken = () => localStorage.getItem('jwt_token');
+const setToken = t => localStorage.setItem('jwt_token', t);
+const clearToken = () => localStorage.removeItem('jwt_token');
+
+async function apiFetch(path, opts = {}) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(API + path, { ...opts, headers });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+// ---- AUTH ----
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+  });
+  document.getElementById('login-form').classList.toggle('active', tab === 'login');
+  document.getElementById('register-form').classList.toggle('active', tab === 'register');
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const data = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: document.getElementById('login-email').value, password: document.getElementById('login-password').value })
+    });
+    setToken(data.token);
+    currentUser = data.user;
+    try { currentUser = await apiFetch('/auth/me'); } catch {}
+    enterApp();
+  } catch (err) {
+    showAuthError(err.message);
+  } finally { btn.disabled = false; btn.textContent = 'Sign In'; }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const data = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name: document.getElementById('reg-name').value, email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value })
+    });
+    setToken(data.token);
+    currentUser = data.user;
+    try { currentUser = await apiFetch('/auth/me'); } catch {}
+    enterApp();
+    showToast('Account created! Welcome 🎉', 'success');
+  } catch (err) {
+    showAuthError(err.message);
+  } finally { btn.disabled = false; btn.textContent = 'Create Account'; }
+}
+
+async function checkAuth() {
+  const token = getToken();
+  if (!token) { showAuthPage(); return; }
+  try { currentUser = await apiFetch('/auth/me'); enterApp(); }
+  catch { clearToken(); showAuthPage(); }
+}
+
+function showAuthPage() {
+  document.getElementById('auth-page').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+function enterApp() {
+  document.getElementById('auth-page').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  updateUserUI(); loadTips();
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greeting').textContent = `${greet}, ${(currentUser.name||'').split(' ')[0]}! 👋`;
+}
+
+function logout() {
+  clearToken(); currentUser = null; googleMap = null; markers = [];
+  showAuthPage(); showToast('Signed out successfully');
+}
+
+function updateUserUI() {
+  if (!currentUser) return;
+  const initial = (currentUser.name || 'U').charAt(0).toUpperCase();
+  document.getElementById('user-avatar').textContent = initial;
+  document.getElementById('user-name-nav').textContent = (currentUser.name || 'User').split(' ')[0];
+  document.getElementById('profile-avatar').textContent = initial;
+  document.getElementById('profile-name').textContent = currentUser.name || 'User';
+  document.getElementById('profile-email').textContent = currentUser.email || '';
+  document.getElementById('profile-id').textContent = '#' + (currentUser.id || '—');
+  document.getElementById('profile-joined').textContent = currentUser.created_at
+    ? new Date(currentUser.created_at).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) : 'N/A';
+}
+
+// ---- PAGES ----
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  const idx = ['dashboard','airquality','tips','emergency','profile'].indexOf(name);
+  if (idx >= 0) document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
+}
+
+// ---- TIPS ----
+async function loadTips() {
+  try { allTips = await apiFetch('/tips'); renderTips(allTips); }
+  catch { allTips = getHardcodedTips(); renderTips(allTips); }
+}
+
+function renderTips(tips) {
+  const grid = document.getElementById('tips-grid');
+  if (!tips || tips.length === 0) { grid.innerHTML = '<div class="empty-state"><span class="big-emoji">💡</span><p>No tips found</p></div>'; return; }
+  grid.innerHTML = tips.map(t => `
+    <div class="tip-card ${t.severity||''}">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:0.8rem;">
+        <span class="tip-badge badge-${t.severity||'low'}">${severityIcon(t.severity)} ${t.severity||'general'}</span>
+        <span class="tip-badge badge-${t.category||'general'}">${t.category||'general'}</span>
+      </div>
+      <div class="tip-title">${t.title}</div>
+      <div class="tip-content">${t.content}</div>
+    </div>`).join('');
+}
+
+function severityIcon(s) { return s==='critical'?'🔴':s==='moderate'?'🟡':'🟢'; }
+
+function filterTips(category, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTips(category === 'all' ? allTips : allTips.filter(t => t.category === category));
+}
+
+// ---- AIR QUALITY ----
+async function loadAirQuality() {
+  const content = document.getElementById('aqi-content');
+  content.innerHTML = '<div class="loading-state"><div class="big-spinner"></div><p>Getting your location and air data...</p></div>';
+
+  if (!navigator.geolocation) {
+    content.innerHTML = '<div class="empty-state"><span class="big-emoji">📍</span><p>Geolocation not supported</p></div>';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const { latitude, longitude } = pos.coords;
+    try {
+      const d = await apiFetch(`/air-quality?lat=${latitude}&lon=${longitude}`);
+      renderAQI(d);
+      // Update dashboard AQI stat
+      document.getElementById('dash-aqi').textContent = d.aqi_label || d.aqi;
+    } catch (err) {
+      content.innerHTML = `<div class="empty-state"><span class="big-emoji">⚠️</span><p>${err.message}</p></div>`;
+    }
+  }, () => {
+    content.innerHTML = '<div class="empty-state"><span class="big-emoji">📍</span><p>Location access denied. Please allow location permissions.</p></div>';
+  }, { timeout: 10000 });
+}
+
+function renderAQI(d) {
+  const p = d.pollutants || {};
+  const triggers = d.triggers || [];
+  const aqiPercent = ((d.aqi - 1) / 4) * 100;
+
+  const gradients = {
+    1: 'linear-gradient(135deg,#059669,#10b981)',
+    2: 'linear-gradient(135deg,#65a30d,#84cc16)',
+    3: 'linear-gradient(135deg,#d97706,#f59e0b)',
+    4: 'linear-gradient(135deg,#ea580c,#f97316)',
+    5: 'linear-gradient(135deg,#dc2626,#ef4444)',
+  };
+
+  document.getElementById('aqi-content').innerHTML = `
+    <div class="aqi-hero" style="background:${gradients[d.aqi]||gradients[1]}">
+      <div>
+        <div style="font-size:0.9rem;opacity:0.8;margin-bottom:0.3rem;">📍 ${d.city||'Your Location'}</div>
+        <div class="aqi-score">${d.aqi_raw}<span style="font-size:1.5rem;"> AQI</span></div>
+        <div class="aqi-label">${d.aqi_label} — ${d.category||''}</div>
+        <div class="aqi-risk">${d.asthma_risk}</div>
+      </div>
+      <div class="aqi-bar-wrap" style="margin-top:1.5rem;max-width:400px;">
+        <div class="aqi-bar-label"><span>Good</span><span>Fair</span><span>Moderate</span><span>Poor</span><span>Very Poor</span></div>
+        <div class="aqi-bar"><div class="aqi-bar-indicator" style="left:${Math.min(Math.max(aqiPercent,2),98)}%"></div></div>
+      </div>
+    </div>
+
+    <div class="aqi-grid">
+      <div class="aqi-card">
+        <h3>🧪 Pollutant Levels <span style="font-size:0.75rem;color:#94a3b8;font-weight:400;">(μg/m³)</span></h3>
+        <div class="pollutant-grid">
+          <div class="pollutant-item"><div class="p-name">PM2.5</div><div class="p-value">${p.pm25||'—'}</div><div class="p-unit">μg/m³</div></div>
+          <div class="pollutant-item"><div class="p-name">PM10</div><div class="p-value">${p.pm10||'—'}</div><div class="p-unit">μg/m³</div></div>
+          <div class="pollutant-item"><div class="p-name">Ozone</div><div class="p-value">${p.o3||'—'}</div><div class="p-unit">μg/m³</div></div>
+          <div class="pollutant-item"><div class="p-name">NO₂</div><div class="p-value">${p.no2||'—'}</div><div class="p-unit">μg/m³</div></div>
+          <div class="pollutant-item"><div class="p-name">SO₂</div><div class="p-value">${p.so2||'—'}</div><div class="p-unit">μg/m³</div></div>
+          <div class="pollutant-item"><div class="p-name">CO</div><div class="p-value">${p.co||'—'}</div><div class="p-unit">μg/m³</div></div>
+        </div>
+      </div>
+
+      <div class="aqi-card">
+        <h3>⚠️ Asthma Triggers Today</h3>
+        <div class="trigger-list">
+          ${triggers.length === 0
+            ? `<div class="trigger-item safe">✅ No significant asthma triggers detected</div>`
+            : triggers.map(t => `<div class="trigger-item">⚠️ ${t}</div>`).join('')}
+        </div>
+        <div style="margin-top:1rem;padding:12px 14px;background:${d.aqi>=4?'#fff1f2':d.aqi===3?'#fffbeb':'#f0fdf4'};border-radius:10px;font-size:0.85rem;font-weight:500;color:${d.aqi>=4?'#be123c':d.aqi===3?'#92400e':'#166534'};">
+          ${d.aqi>=4?'🔴 Keep your rescue inhaler with you at all times today':d.aqi===3?'🟡 Sensitive individuals should limit prolonged outdoor activity':'🟢 Conditions are generally safe for asthma patients today'}
+        </div>
+      </div>
+
+      <div class="aqi-card">
+        <h3>🫁 Lung Disease Recommendation</h3>
+        <p style="font-size:0.9rem;color:var(--ink-soft);line-height:1.65;">${d.lung_recommendation||'No specific recommendation available.'}</p>
+        ${d.dominant_pollutant ? `<div style="margin-top:1rem;padding:10px 14px;background:var(--mist);border-radius:8px;font-size:0.85rem;">
+          <b>Dominant Pollutant:</b> ${d.dominant_pollutant.toUpperCase()}
+        </div>` : ''}
+        <div style="margin-top:0.8rem;font-size:0.75rem;color:#94a3b8;">Source: ${d.source||'Google Air Quality API'}</div>
+      </div>
+    </div>
+  `;
+}
+// ---- EMERGENCY ROOMS ----
+async function loadNearbyRooms() {
+  const grid = document.getElementById('er-grid');
+  grid.innerHTML = '<div class="loading-state"><div class="big-spinner"></div><p>Getting your location...</p></div>';
+  if (!navigator.geolocation) { grid.innerHTML = '<div class="empty-state"><span class="big-emoji">📍</span><p>Geolocation not supported</p></div>'; return; }
+
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const { latitude, longitude } = pos.coords;
+    document.getElementById('location-title').textContent = 'Your Location';
+    document.getElementById('location-coords').textContent = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+
+    const center = { lat: latitude, lng: longitude };
+    googleMap = new google.maps.Map(document.getElementById('map'), {
+      center, zoom: 13, mapTypeControl: false, streetViewControl: false,
+      styles: [{ featureType:'poi', elementType:'labels', stylers:[{ visibility:'off' }] }]
+    });
+
+    new google.maps.Marker({
+      position: center, map: googleMap, title: 'You are here',
+      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#1a6eb5', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 3 }
+    });
+
+    grid.innerHTML = '<div class="loading-state"><div class="big-spinner"></div><p>Searching for emergency rooms...</p></div>';
+
+    try {
+      const data = await apiFetch(`/emergency/nearby?lat=${latitude}&lon=${longitude}&radius=15000`);
+      const rooms = data.rooms || [];
+      document.getElementById('er-count').textContent = rooms.length;
+      markers.forEach(m => m.setMap(null)); markers = [];
+
+      if (rooms.length === 0) { grid.innerHTML = '<div class="empty-state"><span class="big-emoji">🏥</span><p>No emergency rooms found within 15km</p></div>'; return; }
+
+      rooms.forEach((r, i) => {
+        const marker = new google.maps.Marker({
+          position: { lat: r.latitude, lng: r.longitude }, map: googleMap, title: r.name,
+          label: { text: String(i + 1), color: 'white', fontWeight: 'bold', fontSize: '13px' },
+          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 18, fillColor: '#f43f5e', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 }
+        });
+        const infoWindow = new google.maps.InfoWindow({
+          content: `<div style="font-family:'DM Sans',sans-serif;padding:6px;min-width:200px;">
+            <b style="font-size:14px;">${r.name}</b><br/>
+            <span style="color:#64748b;font-size:12px;">📌 ${r.address}</span><br/>
+            <span style="color:#64748b;font-size:12px;">⏱ ~${r.wait_time_minutes} min wait</span><br/>
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${r.latitude},${r.longitude}" target="_blank" style="color:#1a6eb5;font-size:12px;font-weight:600;">🗺️ Get Directions</a>
+          </div>`
+        });
+        marker.addListener('click', () => infoWindow.open(googleMap, marker));
+        markers.push(marker);
+      });
+
+      const bounds = new google.maps.LatLngBounds();
+      bounds.extend(center);
+      rooms.forEach(r => bounds.extend({ lat: r.latitude, lng: r.longitude }));
+      googleMap.fitBounds(bounds);
+
+      grid.innerHTML = rooms.map((r, i) => {
+        const waitClass = r.wait_time_minutes < 20 ? 'wait-low' : r.wait_time_minutes < 40 ? 'wait-mid' : 'wait-high';
+        const waitLabel = r.wait_time_minutes < 20 ? '🟢' : r.wait_time_minutes < 40 ? '🟡' : '🔴';
+        return `
+          <div class="er-card" onclick="focusMarker(${i},${r.latitude},${r.longitude})">
+            <div class="er-header">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="min-width:26px;height:26px;border-radius:50%;background:#f43f5e;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">${i+1}</div>
+                <div class="er-name">${r.name}</div>
+              </div>
+              <div class="er-dist">📍 ${r.distance_km} km</div>
+            </div>
+            <div class="er-meta">
+              <div class="er-meta-row"><span class="icon">📌</span>${r.address}</div>
+              ${r.phone?`<div class="er-meta-row"><span class="icon">📞</span><a href="tel:${r.phone}" style="color:var(--blue);text-decoration:none;" onclick="event.stopPropagation()">${r.phone}</a></div>`:''}
+              <div class="er-meta-row"><span class="icon">${r.is_open_24h?'✅':'🕐'}</span><span class="open-badge ${r.is_open_24h?'open':'closed'}">${r.is_open_24h?'Open 24 Hours':'Check Hours'}</span></div>
+            </div>
+            <div class="er-footer">
+              <div class="wait-badge ${waitClass}">${waitLabel} ~${r.wait_time_minutes} min wait</div>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=${r.latitude},${r.longitude}" target="_blank" class="btn-directions" onclick="event.stopPropagation()">🗺️ Directions</a>
+            </div>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      grid.innerHTML = `<div class="empty-state"><span class="big-emoji">⚠️</span><p>${err.message}</p></div>`;
+    }
+  }, () => {
+    grid.innerHTML = '<div class="empty-state"><span class="big-emoji">📍</span><p>Location access denied. Please allow location permissions.</p></div>';
+  }, { timeout: 10000, enableHighAccuracy: true });
+}
+
+function focusMarker(index, lat, lng) {
+  if (!googleMap || !markers[index]) return;
+  googleMap.panTo({ lat, lng }); googleMap.setZoom(15);
+  markers[index].setAnimation(google.maps.Animation.BOUNCE);
+  setTimeout(() => markers[index].setAnimation(null), 2000);
+}
+
+// ---- SOS MODAL ----
+function openSOS() { document.getElementById('sos-modal').classList.add('active'); }
+function closeSOS() { document.getElementById('sos-modal').classList.remove('active'); }
+document.getElementById('sos-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSOS(); });
+
+// ---- TOAST ----
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast show ${type}`;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ---- HARDCODED TIPS FALLBACK ----
+function getHardcodedTips() {
+  return [
+    {id:1,title:'Always Carry Your Rescue Inhaler',content:'Keep your short-acting bronchodilator inhaler with you at all times. During an asthma attack, every second counts.',category:'emergency',severity:'critical'},
+    {id:2,title:'Identify Your Triggers',content:'Common triggers include dust mites, pet dander, pollen, mold, tobacco smoke, air pollution, cold air, and exercise.',category:'prevention',severity:'moderate'},
+    {id:3,title:'Follow the 4-4-4 Rule During an Attack',content:'Take 4 puffs of your reliever inhaler, wait 4 minutes, take 4 more puffs if no improvement. Call 911 if still no relief.',category:'emergency',severity:'critical'},
+    {id:4,title:'Use a Peak Flow Meter Daily',content:'Monitoring your peak expiratory flow rate (PEFR) daily helps detect early warning signs before symptoms appear.',category:'monitoring',severity:'moderate'},
+    {id:5,title:'Create an Asthma Action Plan',content:'Work with your doctor to create a written action plan with three zones: Green, Yellow, and Red.',category:'management',severity:'moderate'},
+    {id:6,title:'Proper Inhaler Technique',content:'Shake inhaler well, breathe out fully, press while breathing in slowly, hold breath for 10 seconds. A spacer improves delivery by 30%.',category:'medication',severity:'low'},
+    {id:7,title:'Keep Home Humidity Between 30-50%',content:'Dust mites and mold thrive in high humidity. Use a dehumidifier and check levels with a hygrometer.',category:'environment',severity:'moderate'},
+    {id:8,title:'Exercise Safely with Asthma',content:'Warm up for 10-15 minutes before exercise. Consider pre-medicating with your rescue inhaler if prescribed.',category:'lifestyle',severity:'low'},
+    {id:9,title:'Asthma Attack Warning Signs',content:'Early signs: increased coughing at night, wheezing, shortness of breath, chest tightness. Act early.',category:'emergency',severity:'critical'},
+    {id:10,title:'Avoid NSAIDs if Aspirin-Sensitive',content:'5-10% of adults with asthma have AERD. Avoid aspirin, ibuprofen, and naproxen. Use acetaminophen instead.',category:'medication',severity:'moderate'},
+    {id:11,title:'Flu & Pneumonia Vaccines Are Essential',content:'Respiratory infections are a leading asthma trigger. Get an annual flu vaccine and discuss pneumococcal vaccine.',category:'prevention',severity:'moderate'},
+    {id:12,title:'Breathing Techniques for Asthma',content:'Pursed-lip breathing slows breathing rate and keeps airways open. Practice daily when well.',category:'lifestyle',severity:'low'},
+  ];
+}
+
+checkAuth();
+</script>
+
+<script>
+async function loadGoogleMaps() {
+    const res = await fetch('/config');
+    const config = await res.json();
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${config.google_maps_key}`;
+    document.head.appendChild(script);
+}
+loadGoogleMaps().then(() => checkAuth());
+</script>
+</body>
+</html>
