@@ -1509,6 +1509,49 @@
           </div>
           <button onclick="handleGenerateAQIImage()" class="btn-primary" style="padding: 12px 36px; font-size: 1rem; border-radius: 50px; background: linear-gradient(135deg, var(--blue), var(--blue-dark));">Generate AI Visualization (15x12cm)</button>
       </div>
+
+      <!-- Breath-Sync Soundscapes (Lyria) -->
+      <div style="background: linear-gradient(135deg, #1e1b4b, #312e81); border-radius:24px; padding:2.5rem; box-shadow:var(--shadow); margin-bottom:1.5rem; color:white;">
+          <h3 style="font-weight:700; margin-bottom:0.5rem; display:flex; align-items:center; gap:12px; font-size:1.4rem;">
+            <span style="font-size:1.8rem;">🎵</span> Breath-Sync Soundscapes <span style="font-size:0.8rem; background:rgba(255,255,255,0.2); color:white; padding:4px 10px; border-radius:20px; letter-spacing:0.02em;">LYRIA AI</span>
+          </h3>
+          <p style="opacity:0.7; font-size:0.95rem; margin-bottom:1.5rem;">AI-generated meditation tracks synced to the 4-7-8 breathing technique</p>
+
+          <!-- Mood Selector -->
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:1.5rem;">
+            <button onclick="selectBreathMood('calm')" id="mood-calm" class="breath-mood-btn active" style="padding:10px 20px; border-radius:50px; border:2px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.15); color:white; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.3s;">🧘 Calm</button>
+            <button onclick="selectBreathMood('rain')" id="mood-rain" class="breath-mood-btn" style="padding:10px 20px; border-radius:50px; border:2px solid rgba(255,255,255,0.3); background:transparent; color:white; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.3s;">🌧️ Rain</button>
+            <button onclick="selectBreathMood('ocean')" id="mood-ocean" class="breath-mood-btn" style="padding:10px 20px; border-radius:50px; border:2px solid rgba(255,255,255,0.3); background:transparent; color:white; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.3s;">🌊 Ocean</button>
+            <button onclick="selectBreathMood('forest')" id="mood-forest" class="breath-mood-btn" style="padding:10px 20px; border-radius:50px; border:2px solid rgba(255,255,255,0.3); background:transparent; color:white; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.3s;">🌲 Forest</button>
+            <button onclick="selectBreathMood('lofi')" id="mood-lofi" class="breath-mood-btn" style="padding:10px 20px; border-radius:50px; border:2px solid rgba(255,255,255,0.3); background:transparent; color:white; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.3s;">🎧 Lo-Fi</button>
+          </div>
+
+          <!-- Breathing Circle + Controls -->
+          <div style="display:flex; align-items:center; justify-content:center; gap:3rem; flex-wrap:wrap;">
+            <!-- Breathing Animation Circle -->
+            <div style="display:flex; flex-direction:column; align-items:center; gap:15px;">
+              <div id="breath-circle" style="width:140px; height:140px; border-radius:50%; background:rgba(99,102,241,0.3); border:3px solid rgba(167,139,250,0.6); display:flex; align-items:center; justify-content:center; transition: transform 4s ease-in-out, background 4s ease-in-out;">
+                <span id="breath-label" style="font-size:1.1rem; font-weight:700; opacity:0.9;">Press Play</span>
+              </div>
+              <div id="breath-timer" style="font-size:2.5rem; font-weight:800; opacity:0.4; font-family:'DM Sans',sans-serif;">0:00</div>
+            </div>
+
+            <!-- Audio Controls -->
+            <div style="display:flex; flex-direction:column; align-items:center; gap:15px;">
+              <button id="breath-gen-btn" onclick="generateBreathSync()" style="padding:14px 40px; border-radius:50px; border:none; background:linear-gradient(135deg,#8b5cf6,#6d28d9); color:white; font-size:1.05rem; font-weight:700; cursor:pointer; box-shadow:0 8px 25px rgba(109,40,217,0.4); transition:all 0.3s;">
+                🎵 Generate Soundscape
+              </button>
+              <div id="breath-loading" style="display:none; color:rgba(255,255,255,0.7); font-size:0.9rem;">
+                <span class="big-spinner" style="width:20px;height:20px;border-width:2px;margin-right:8px;"></span> Lyria is composing your track...
+              </div>
+              <audio id="breath-audio" style="display:none; width:100%;" controls></audio>
+              <button id="breath-play-btn" onclick="startBreathingExercise()" style="display:none; padding:12px 32px; border-radius:50px; border:2px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:white; font-size:0.95rem; font-weight:600; cursor:pointer; transition:all 0.3s;">
+                ▶ Start 4-7-8 Breathing
+              </button>
+            </div>
+          </div>
+      </div>
+
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.5rem;">
         <div style="background:white;border-radius:16px;padding:1.5rem;box-shadow:var(--shadow);">
           <h3 style="font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:8px;"><span>⚡</span> Quick
@@ -2216,6 +2259,131 @@
       googleMap.panTo({ lat, lng }); googleMap.setZoom(15);
       markers[index].setAnimation(google.maps.Animation.BOUNCE);
       setTimeout(() => markers[index].setAnimation(null), 2000);
+    }
+
+    // ---- BREATH-SYNC (LYRIA) ----
+    let selectedBreathMood = 'calm';
+    let breathInterval = null;
+
+    function selectBreathMood(mood) {
+      selectedBreathMood = mood;
+      document.querySelectorAll('.breath-mood-btn').forEach(b => {
+        b.style.background = 'transparent';
+        b.classList.remove('active');
+      });
+      const btn = document.getElementById('mood-' + mood);
+      if (btn) {
+        btn.style.background = 'rgba(255,255,255,0.15)';
+        btn.classList.add('active');
+      }
+    }
+
+    async function generateBreathSync() {
+      const genBtn = document.getElementById('breath-gen-btn');
+      const loading = document.getElementById('breath-loading');
+      const audioEl = document.getElementById('breath-audio');
+      const playBtn = document.getElementById('breath-play-btn');
+
+      genBtn.style.display = 'none';
+      loading.style.display = 'flex';
+      audioEl.style.display = 'none';
+      playBtn.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/breathsync?mood=${selectedBreathMood}`);
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Generation failed');
+
+        if (data.audio_data) {
+          const mime = data.mime_type || 'audio/wav';
+          audioEl.src = `data:${mime};base64,${data.audio_data}`;
+          audioEl.style.display = 'block';
+          playBtn.style.display = 'inline-flex';
+          showToast('Soundscape generated! 🎵', 'success');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        genBtn.style.display = 'inline-flex';
+        loading.style.display = 'none';
+      }
+    }
+
+    function startBreathingExercise() {
+      const audioEl = document.getElementById('breath-audio');
+      const circle = document.getElementById('breath-circle');
+      const label = document.getElementById('breath-label');
+      const timer = document.getElementById('breath-timer');
+      const playBtn = document.getElementById('breath-play-btn');
+
+      // Stop if already running
+      if (breathInterval) {
+        clearInterval(breathInterval);
+        breathInterval = null;
+        audioEl.pause();
+        audioEl.currentTime = 0;
+        circle.style.transform = 'scale(1)';
+        circle.style.background = 'rgba(99,102,241,0.3)';
+        label.textContent = 'Press Play';
+        timer.textContent = '0:00';
+        timer.style.opacity = '0.4';
+        playBtn.textContent = '▶ Start 4-7-8 Breathing';
+        return;
+      }
+
+      audioEl.play();
+      playBtn.textContent = '⏹ Stop';
+
+      // 4-7-8 breathing cycle: 4s inhale, 7s hold, 8s exhale = 19s total
+      let elapsed = 0;
+      const cycleLength = 19;
+
+      function updateBreath() {
+        elapsed++;
+        const cyclePos = elapsed % cycleLength;
+        const totalSec = elapsed;
+        const mins = Math.floor(totalSec / 60);
+        const secs = totalSec % 60;
+        timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        timer.style.opacity = '1';
+
+        if (cyclePos >= 0 && cyclePos < 4) {
+          // INHALE (4 seconds)
+          label.textContent = '🌬️ Inhale';
+          circle.style.transform = `scale(${1 + (cyclePos / 4) * 0.4})`;
+          circle.style.background = 'rgba(59, 130, 246, 0.5)';
+          circle.style.borderColor = 'rgba(96, 165, 250, 0.8)';
+        } else if (cyclePos >= 4 && cyclePos < 11) {
+          // HOLD (7 seconds)
+          label.textContent = '✋ Hold';
+          circle.style.transform = 'scale(1.4)';
+          circle.style.background = 'rgba(168, 85, 247, 0.5)';
+          circle.style.borderColor = 'rgba(192, 132, 252, 0.8)';
+        } else {
+          // EXHALE (8 seconds)
+          const exhalePos = cyclePos - 11;
+          label.textContent = '😮‍💨 Exhale';
+          circle.style.transform = `scale(${1.4 - (exhalePos / 8) * 0.4})`;
+          circle.style.background = 'rgba(16, 185, 129, 0.5)';
+          circle.style.borderColor = 'rgba(52, 211, 153, 0.8)';
+        }
+      }
+
+      updateBreath();
+      breathInterval = setInterval(updateBreath, 1000);
+
+      // Stop when audio ends
+      audioEl.onended = () => {
+        if (breathInterval) {
+          clearInterval(breathInterval);
+          breathInterval = null;
+        }
+        circle.style.transform = 'scale(1)';
+        circle.style.background = 'rgba(99,102,241,0.3)';
+        label.textContent = 'Complete ✨';
+        playBtn.textContent = '▶ Start 4-7-8 Breathing';
+      };
     }
 
     // ---- SOS MODAL ----

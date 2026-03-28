@@ -27,6 +27,7 @@ func SetupRoutes(app *fiber.App) {
 	// Air Quality & GenAI
 	app.Get("/air-quality", controllers.GetAirQuality)
 	app.Get("/api/aqi/image", controllers.GetAQIImage)
+	app.Get("/api/breathsync", controllers.GetBreathSyncAudio)
 	
 	// Voice Assistant (WebSocket proxy)
 	app.Use("/api/live/connect", func(c *fiber.Ctx) error {
