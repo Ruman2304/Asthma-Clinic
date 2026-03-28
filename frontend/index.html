@@ -1160,6 +1160,31 @@
       animation: spin 0.7s linear infinite;
     }
 
+    .aqi-visualizer {
+      width: 567px;
+      height: 454px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid #e2e8f0;
+    }
+
+    .aqi-visualizer img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .visualizer-placeholder {
+      font-size: 2.5rem;
+      opacity: 0.2;
+    }
+
     @keyframes spin {
       to {
         transform: rotate(360deg);
@@ -1472,11 +1497,17 @@
           <div class="stat-num" id="dash-aqi">—</div>
           <div class="stat-label">Air Quality Index</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon coral">📋</div>
-          <div class="stat-num">5</div>
-          <div class="stat-label">Action Plan Steps</div>
-        </div>
+      </div>
+
+      <!-- Dedicated AI Section for larger image -->
+      <div style="background:white;border-radius:24px;padding:2.5rem;box-shadow:var(--shadow);margin-bottom:1.5rem;display:flex;flex-direction:column;align-items:center;">
+          <h3 style="font-weight:700;margin-bottom:1.5rem;display:flex;align-items:center;gap:12px;font-size:1.4rem;">
+            <span style="font-size:1.8rem;">🏙️</span> City Visualizer <span style="font-size:0.8rem;background:var(--blue);color:white;padding:4px 10px;border-radius:20px;letter-spacing:0.02em;">AI GENERATED</span>
+          </h3>
+          <div id="dash-viz" class="aqi-visualizer" style="margin-bottom:1.5rem;border:none;box-shadow: 0 10px 40px rgba(0,0,0,0.12);">
+            <span class="visualizer-placeholder" style="font-size:4rem;">🏙️</span>
+          </div>
+          <button onclick="handleGenerateAQIImage()" class="btn-primary" style="padding: 12px 36px; font-size: 1rem; border-radius: 50px; background: linear-gradient(135deg, var(--blue), var(--blue-dark));">Generate AI Visualization (15x12cm)</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.5rem;">
         <div style="background:white;border-radius:16px;padding:1.5rem;box-shadow:var(--shadow);">
@@ -1684,6 +1715,7 @@
     let allTips = [];
     let googleMap = null;
     let markers = [];
+    let currentAQIData = { city: '', aqi_raw: 0 };
 
     const getToken = () => localStorage.getItem('jwt_token');
     const setToken = t => localStorage.setItem('jwt_token', t);
@@ -1932,7 +1964,7 @@
       }
 
       navigator.geolocation.getCurrentPosition(async (pos) => {
-        fetchAirQuality(pos.coords.latitude, pos.coords.longitude, 'Your Location');
+        fetchAirQuality(pos.coords.latitude, pos.coords.longitude, '');
       }, () => {
         content.innerHTML = '<div class="empty-state"><span class="big-emoji">📍</span><p>Location access denied. Please allow location permissions.</p></div>';
       }, { timeout: 10000 });
@@ -1946,15 +1978,51 @@
         renderAQI(d);
         // Update dashboard AQI stat
         document.getElementById('dash-aqi').textContent = d.aqi_label || d.aqi;
+
+        // Store for manual visualization
+        currentAQIData = { city: d.city, aqi_raw: d.aqi_raw };
       } catch (err) {
         content.innerHTML = `<div class="empty-state"><span class="big-emoji">⚠️</span><p>${err.message}</p></div>`;
       }
+    }
+
+    async function fetchAQIImage(city, aqi) {
+      if (!city || !aqi) return;
+      const dashViz = document.getElementById('dash-viz');
+      const aqiViz = document.getElementById('aqi-viz');
+
+      if (dashViz) dashViz.innerHTML = '<div class="spinner"></div>';
+      if (aqiViz) aqiViz.innerHTML = '<div class="spinner"></div>';
+
+      try {
+        const res = await apiFetch(`/api/aqi/image?city=${encodeURIComponent(city)}&aqi=${aqi}`);
+        if (res.image_url) {
+          const img = `<img src="${res.image_url}" alt="${city}">`;
+          if (dashViz) dashViz.innerHTML = img;
+          if (aqiViz) aqiViz.innerHTML = img;
+        }
+      } catch (err) {
+        console.error('Image generation failed', err);
+        const errIcon = '<span class="visualizer-placeholder">🏙️</span>';
+        if (dashViz) dashViz.innerHTML = errIcon;
+        if (aqiViz) aqiViz.innerHTML = errIcon;
+      }
+    }
+
+    function handleGenerateAQIImage() {
+      if (!currentAQIData.city) {
+        showToast('Please search for a location first', 'error');
+        return;
+      }
+      fetchAQIImage(currentAQIData.city, currentAQIData.aqi_raw);
     }
 
     function renderAQI(d) {
       const p = d.pollutants || {};
       const triggers = d.triggers || [];
       const aqiPercent = ((d.aqi - 1) / 4) * 100;
+      const currentAqi = d.aqi_raw;
+      const currentCity = d.city;
 
       const gradients = {
         1: 'linear-gradient(135deg,#059669,#10b981)',
@@ -1965,14 +2033,16 @@
       };
 
       document.getElementById('aqi-content').innerHTML = `
-    <div class="aqi-hero" style="background:${gradients[d.aqi] || gradients[1]}">
-      <div>
-        <div style="font-size:0.9rem;opacity:0.8;margin-bottom:0.3rem;">📍 ${d.city || 'Your Location'}</div>
-        <div class="aqi-score">${d.aqi_raw}<span style="font-size:1.5rem;"> AQI</span></div>
-        <div class="aqi-label">${d.aqi_label} — ${d.category || ''}</div>
-        <div class="aqi-risk">${d.asthma_risk}</div>
+    <div class="aqi-hero" style="background:${gradients[d.aqi] || gradients[1]}; height: auto; padding: 2.5rem 1.5rem;">
+      <div style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+        <div>
+          <div style="font-size:1.1rem; opacity:0.9; margin-bottom:0.5rem;">📍 ${d.city || 'Your Location'}</div>
+          <div class="aqi-score" style="font-size:4.5rem; line-height:1;">${d.aqi_raw}<span style="font-size:1.5rem;"> AQI</span></div>
+          <div class="aqi-label" style="font-size:1.4rem; font-weight:700; margin-top:0.5rem;">${d.aqi_label} — ${d.category || ''}</div>
+          <div class="aqi-risk" style="margin-top:0.8rem; font-size:1.05rem; opacity:0.9; max-width: 600px;">${d.asthma_risk}</div>
+        </div>
       </div>
-      <div class="aqi-bar-wrap" style="margin-top:1.5rem;max-width:400px;">
+      <div class="aqi-bar-wrap" style="margin-top:2.5rem; max-width:500px; margin-left:auto; margin-right:auto;">
         <div class="aqi-bar-label"><span>Good</span><span>Fair</span><span>Moderate</span><span>Poor</span><span>Very Poor</span></div>
         <div class="aqi-bar"><div class="aqi-bar-indicator" style="left:${Math.min(Math.max(aqiPercent, 2), 98)}%"></div></div>
       </div>

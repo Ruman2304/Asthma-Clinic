@@ -310,6 +310,121 @@ func GetAirQuality(c *fiber.Ctx) error {
 	})
 }
 
+// GetAQIImage generates a 3D isometric image of a city based on its AQI level
+func GetAQIImage(c *fiber.Ctx) error {
+	city := c.Query("city", "Your Location")
+	aqiStr := c.Query("aqi", "50")
+	aqiValue, _ := strconv.Atoi(aqiStr)
+
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		return c.Status(500).JSON(fiber.Map{"error": "GEMINI_API_KEY not set"})
+	}
+
+	/* Determine atmosphere based on AQI
+	atmosphere := "clear blue skies, bright sunlight, vibrant colors"
+	if aqiValue > 50 {
+		atmosphere = "hazy, smoggy, yellowish atmosphere, reduced visibility"
+	} else if aqiValue > 70 {
+		atmosphere = "slightly hazy, pale sky, muted colors"
+	}
+	*/
+	var atmosphere string
+
+	switch {
+	case aqiValue <= 20:
+		atmosphere = "crystal clear skies, deep blue color, उत्कृष्ट visibility, vivid sunlight"
+
+	case aqiValue <= 40:
+		atmosphere = "very clear sky, bright sunlight, sharp visibility, rich colors"
+
+	case aqiValue <= 60:
+		atmosphere = "mostly clear, slight softness in distance, natural colors"
+
+	case aqiValue <= 80:
+		atmosphere = "slight haze, mild desaturation, distant objects थोड़ा blurred"
+
+	case aqiValue <= 100:
+		atmosphere = "light haze, pale blue sky, softened sunlight, reduced clarity"
+
+	case aqiValue <= 120:
+		atmosphere = "noticeable haze, muted colors, visibility clearly reduced"
+
+	case aqiValue <= 140:
+		atmosphere = "moderate smog, yellowish tint, washed-out sky, low visibility"
+
+	case aqiValue <= 150:
+		atmosphere = "heavy haze, dull sunlight, strong color fading, poor visibility"
+
+	default:
+		atmosphere = "dense smog, thick atmosphere, very low visibility, oppressive sky"
+	}
+
+	prompt := fmt.Sprintf(
+		"A high-quality 3D isometric render on a floating white digital platform of %s. The city has an AQI of %d. The atmosphere is %s. Style: modern 3D icon, detailed architecture, clean design, 15:12 aspect ratio, soft shadows.",
+		city, aqiValue, atmosphere,
+	)
+
+	// Gemini API endpoint for image generation (Nano Banana / Gemini 3.1 Flash Image)
+	// Using the experimental generateContent with IMAGE modality
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=%s", apiKey)
+
+	reqBody := map[string]interface{}{
+		"contents": []interface{}{
+			map[string]interface{}{
+				"parts": []interface{}{
+					map[string]interface{}{"text": prompt},
+				},
+			},
+		},
+		"generationConfig": map[string]interface{}{
+			"responseModalities": []string{"IMAGE"},
+		},
+	}
+
+	jsonBody, _ := json.Marshal(reqBody)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to call Gemini API: " + err.Error()})
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return c.Status(resp.StatusCode).JSON(fiber.Map{"error": "API error: " + string(bodyBytes)})
+	}
+
+	// The response format for IMAGE modality contains the image in base64
+	var result struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct {
+					InlineData struct {
+						MimeType string `json:"mimeType"`
+						Data     string `json:"data"`
+					} `json:"inlineData"`
+				} `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
+	}
+
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to parse Gemini response", "details": string(bodyBytes)})
+	}
+
+	if len(result.Candidates) == 0 || len(result.Candidates[0].Content.Parts) == 0 {
+		return c.Status(500).JSON(fiber.Map{"error": "No image generated", "details": string(bodyBytes)})
+	}
+
+	// Usually, we want to return the data URI or the base64 string
+	imgData := result.Candidates[0].Content.Parts[0].InlineData.Data
+	mimeType := result.Candidates[0].Content.Parts[0].InlineData.MimeType
+
+	return c.JSON(fiber.Map{
+		"image_url": fmt.Sprintf("data:%s;base64,%s", mimeType, imgData),
+	})
+}
+
 func buildAQIFallback(lat, lon float64, city string) fiber.Map {
 	return fiber.Map{
 		"city":                city,
