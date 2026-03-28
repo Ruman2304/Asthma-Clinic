@@ -4,6 +4,7 @@ import (
 	controllers "asthma-clinic/controller"
 	"asthma-clinic/middleware"
 
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -23,9 +24,20 @@ func SetupRoutes(app *fiber.App) {
 	// Tips (public)
 	app.Get("/tips", controllers.GetAllTips)
 
-	// Air Quality
+	// Air Quality & GenAI
 	app.Get("/air-quality", controllers.GetAirQuality)
 	app.Get("/api/aqi/image", controllers.GetAQIImage)
+	
+	// Voice Assistant (WebSocket proxy)
+	app.Use("/api/live/connect", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
+	app.Get("/api/live/connect", controllers.HandleLiveConnection())
+
 	app.Get("/config", controllers.GetConfig)
 
 	// Pollen
