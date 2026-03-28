@@ -26,4 +26,7 @@ func SetupRoutes(app *fiber.App) {
 	// Air Quality
 	app.Get("/air-quality", controllers.GetAirQuality)
 	app.Get("/config", controllers.GetConfig)
+
+	// Pollen
+	app.Get("/pollen", controllers.GetPollenData)
 }

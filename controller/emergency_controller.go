@@ -40,7 +40,7 @@ type GooglePlacesResponse struct {
 // ---- Haversine distance ----
 
 func haversine(lat1, lon1, lat2, lon2 float64) float64 {
-	const R = 6371.0
+	const R = 3958.8 // Radius of Earth in miles
 	dLat := (lat2 - lat1) * math.Pi / 180
 	dLon := (lon2 - lon1) * math.Pi / 180
 	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
@@ -51,10 +51,11 @@ func haversine(lat1, lon1, lat2, lon2 float64) float64 {
 
 // ---- Shared function to call Google Places ----
 
-func fetchGooglePlaces(lat, lon float64, radius int, keyword, apiKey string) ([]models.EmergencyRoom, error) {
+func fetchGooglePlaces(lat, lon float64, radius int, pType, keyword, apiKey string) ([]models.EmergencyRoom, error) {
+	// Use rankby=distance to guarantee physically closest results are returned first
 	url := fmt.Sprintf(
-		"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=%f,%f&radius=%d&type=hospital&keyword=%s&key=%s",
-		lat, lon, radius, keyword, apiKey,
+		"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=%f,%f&rankby=distance&type=%s&keyword=%s&key=%s",
+		lat, lon, pType, keyword, apiKey,
 	)
 
 	resp, err := http.Get(url)
@@ -78,10 +79,18 @@ func fetchGooglePlaces(lat, lon float64, radius int, keyword, apiKey string) ([]
 	}
 
 	var rooms []models.EmergencyRoom
+	// Convert radius from meters to miles for filtering
+	maxMiles := float64(radius) * 0.000621371
+
 	for i, place := range placesResp.Results {
 		plat := place.Geometry.Location.Lat
 		plng := place.Geometry.Location.Lng
 		dist := math.Round(haversine(lat, lon, plat, plng)*100) / 100
+
+		// Manually filter by the requested radius!
+		if dist > maxMiles {
+			continue
+		}
 
 		isOpen := false
 		if place.OpeningHours != nil {
@@ -115,6 +124,7 @@ func GetNearbyEmergencyRooms(c *fiber.Ctx) error {
 	latStr := c.Query("lat", "")
 	lonStr := c.Query("lon", "")
 	radiusStr := c.Query("radius", "15000")
+	placeType := c.Query("type", "er")
 
 	if latStr == "" || lonStr == "" {
 		return c.Status(400).JSON(fiber.Map{"error": "lat and lon query parameters are required"})
@@ -140,17 +150,22 @@ func GetNearbyEmergencyRooms(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"count": 0, "rooms": []models.EmergencyRoom{}, "source": "no_api_key"})
 	}
 
-	// --- Primary search: hospitals with emergency keyword ---
-	rooms, err := fetchGooglePlaces(lat, lon, radius, "emergency", apiKey)
+	// --- Search logic based on type ---
+	var rooms []models.EmergencyRoom
 
-	// --- Fallback search: broader hospital search if primary returns nothing ---
-	if err != nil || len(rooms) == 0 {
-		rooms, err = fetchGooglePlaces(lat, lon, radius*2, "hospital", apiKey)
-	}
-
-	// --- Last resort: even broader search with larger radius ---
-	if err != nil || len(rooms) == 0 {
-		rooms, err = fetchGooglePlaces(lat, lon, 50000, "clinic+medical+hospital", apiKey)
+	if placeType == "cvs" {
+		rooms, err = fetchGooglePlaces(lat, lon, radius, "pharmacy", "cvs", apiKey)
+	} else if placeType == "hospital" {
+		rooms, err = fetchGooglePlaces(lat, lon, radius, "hospital", "hospital", apiKey)
+	} else {
+		// "er" or default
+		rooms, err = fetchGooglePlaces(lat, lon, radius, "hospital", "emergency", apiKey)
+		if err != nil || len(rooms) == 0 {
+			rooms, err = fetchGooglePlaces(lat, lon, radius*2, "hospital", "medical+center", apiKey)
+		}
+		if err != nil || len(rooms) == 0 {
+			rooms, err = fetchGooglePlaces(lat, lon, radius*2, "hospital", "clinic", apiKey)
+		}
 	}
 
 	// --- If all Google calls fail, return empty with message ---

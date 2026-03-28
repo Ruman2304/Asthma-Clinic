@@ -267,7 +267,10 @@ func GetAirQuality(c *fiber.Ctx) error {
 	// ---- Parse pollutants ----
 	pollutants := fiber.Map{}
 	for _, p := range aqiData.Pollutants {
-		pollutants[p.Code] = round2(p.Concentration.Value)
+		pollutants[p.Code] = fiber.Map{
+			"value": round2(p.Concentration.Value),
+			"unit":  p.Concentration.Units,
+		}
 	}
 
 	// ---- Build asthma triggers ----
@@ -320,12 +323,12 @@ func buildAQIFallback(lat, lon float64, city string) fiber.Map {
 		"lung_recommendation": "Unusually sensitive people should consider reducing prolonged outdoor exertion.",
 		"triggers":            []string{},
 		"pollutants": fiber.Map{
-			"pm25": 8.0,
-			"pm10": 12.0,
-			"o3":   60.0,
-			"no2":  15.0,
-			"so2":  5.0,
-			"co":   200.0,
+			"pm25": fiber.Map{"value": 8.0, "unit": "μg/m³"},
+			"pm10": fiber.Map{"value": 12.0, "unit": "μg/m³"},
+			"o3":   fiber.Map{"value": 60.0, "unit": "ppb"},
+			"no2":  fiber.Map{"value": 15.0, "unit": "ppb"},
+			"so2":  fiber.Map{"value": 5.0, "unit": "ppb"},
+			"co":   fiber.Map{"value": 200.0, "unit": "ppb"},
 		},
 		"source": "fallback",
 	}

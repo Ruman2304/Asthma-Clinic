@@ -12,7 +12,7 @@ type EmergencyRoom struct {
 	WaitTime  int     `json:"wait_time_minutes"`
 	IsOpen24H bool    `json:"is_open_24h"`
 	Rating    float64 `json:"rating"`
-	Distance  float64 `json:"distance_km,omitempty"`
+	Distance  float64 `json:"distance_mi,omitempty"`
 }
 
 type AsthmaTip struct {
