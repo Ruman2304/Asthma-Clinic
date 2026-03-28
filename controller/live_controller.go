@@ -21,13 +21,19 @@ func HandleLiveConnection() fiber.Handler {
 		}
 
 		// Connect to Gemini Multimodal Live API
-		// gemini-3.1-flash-live-preview only supports bidiGenerateContent
-		// Try v1alpha first (required for some live models)
-		geminiURL := "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=" + apiKey
+		// v1beta is more stable for newer API keys
+		geminiURL := "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=" + apiKey
 
-		geminiConn, _, err := gorilla.DefaultDialer.Dial(geminiURL, nil)
+		// Log partial key to verify .env is loaded correctly (first 5 chars)
+		log.Printf("Connecting to Gemini Live (v1beta) using key starting with: %s...", apiKey[:5])
+
+		geminiConn, resp, err := gorilla.DefaultDialer.Dial(geminiURL, nil)
 		if err != nil {
-			log.Printf("Failed to connect to Gemini Live API: %v", err)
+			if resp != nil {
+				log.Printf("Gemini Handshake Error: Status=%d, Error=%v", resp.StatusCode, err)
+			} else {
+				log.Printf("Failed to connect to Gemini Live API (Network Error): %v", err)
+			}
 			c.Close()
 			return
 		}
